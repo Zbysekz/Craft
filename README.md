@@ -97,7 +97,9 @@ the client.
 - Ctrl + Right Click to toggle a block as a light source.
 - 1-9 to select the block type to create.
 - E to cycle through the block types.
+- X to descend while flying
 - Tab to toggle between walking and flying.
+- C to toggle mouse wheel scrolling (which is annoying with a trackpad)
 - ZXCVBN to move in exact directions along the XYZ axes.
 - Left shift to zoom.
 - F to show the scene in orthographic mode.
@@ -108,6 +110,9 @@ the client.
 - Backquote (`) to write text on any block (signs).
 - Arrow keys emulate mouse movement.
 - Enter emulates mouse click.
+- Escape to let the mouse cursor move outside the window (so you can close it).
+- Click in the Crafted window to resume mouse input.
+- See the file src/config.h for a full list of controls.
 
 ### Chat Commands
 

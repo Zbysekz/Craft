@@ -135,6 +135,7 @@ typedef struct {
     int observe1;
     int observe2;
     int flying;
+  int scrolling_enabled; //zw //boolean
     int item_index;
     int scale;
     int ortho;
@@ -2250,6 +2251,9 @@ void on_key(GLFWwindow *window, int key, int scancode, int action, int mods) {
         if (key == CRAFT_KEY_FLY) {
             g->flying = !g->flying;
         }
+	if (key == CRAFT_KEY_TOGGLE_SCROLLING) {
+            g->scrolling_enabled = !g->scrolling_enabled;
+        }
         if (key >= '1' && key <= '9') {
             g->item_index = key - '1';
         }
@@ -2309,17 +2313,25 @@ void on_char(GLFWwindow *window, unsigned int u) {
 
 void on_scroll(GLFWwindow *window, double xdelta, double ydelta) {
     static double ypos = 0;
-    ypos += ydelta;
-    if (ypos < -SCROLL_THRESHOLD) {
-        g->item_index = (g->item_index + 1) % item_count;
+
+    if (g->scrolling_enabled) { //zw
+      ypos += ydelta;
+
+      if (ypos < -SCROLL_THRESHOLD) {
+	//if the mouse wheel scrolls below threshold
+
+	g->item_index = (g->item_index + 1) % item_count;
         ypos = 0;
-    }
-    if (ypos > SCROLL_THRESHOLD) {
-        g->item_index--;
+      }
+      if (ypos > SCROLL_THRESHOLD) {
+	//if the mouse wheel scrolls above threshold
+
+	g->item_index--;
         if (g->item_index < 0) {
-            g->item_index = item_count - 1;
+	  g->item_index = item_count - 1;
         }
-        ypos = 0;
+        ypos = 0; //zw: value not used in this file, maybe by another?
+      }
     }
 }
 
@@ -2437,6 +2449,13 @@ void handle_movement(double dt) {
                 dy = 8;
             }
         }
+
+	//zw
+	if (glfwGetKey(g->window, CRAFT_KEY_DESCEND)) {
+            if (g->flying) {
+                vy = -1;
+            }
+	}
     }
     float speed = g->flying ? 20 : 5;
     int estimate = roundf(sqrtf(
@@ -2573,6 +2592,7 @@ void reset_model() {
     g->observe1 = 0;
     g->observe2 = 0;
     g->flying = 0;
+    g->scrolling_enabled = 1;
     g->item_index = 0;
     memset(g->typing_buffer, 0, sizeof(char) * MAX_TEXT_LENGTH);
     g->typing = 0;
