@@ -136,6 +136,7 @@ typedef struct {
     int observe2;
     int flying;
   int scrolling_enabled; //zw //boolean
+  int minecraft_style_flying; //zw //boolean
     int item_index;
     int scale;
     int ortho;
@@ -202,14 +203,18 @@ void get_sight_vector(float rx, float ry, float *vx, float *vy, float *vz) {
     *vz = sinf(rx - RADIANS(90)) * m;
 }
 
-void get_motion_vector(int flying, int sz, int sx, float rx, float ry,
-    float *vx, float *vy, float *vz) {
+//Parameters and number of parameters changed by ZW //zw
+void get_motion_vector(int flying, int minecraft_style_flying,
+		       int sz, int sx, float rx, float ry,
+		       float *vx, float *vy, float *vz)
+{
     *vx = 0; *vy = 0; *vz = 0;
-    if (!sz && !sx) {
+    if (!sz && !sx)
+    {
         return;
     }
     float strafe = atan2f(sz, sx);
-    if (flying) {
+    if (flying && !minecraft_style_flying) { //zw //and NOT minecraft style
         float m = cosf(ry);
         float y = sinf(ry);
         if (sx) {
@@ -2257,6 +2262,11 @@ void on_key(GLFWwindow *window, int key, int scancode, int action, int mods) {
             g->scrolling_enabled = !g->scrolling_enabled;
         }
 
+	//zw
+	if (key == CRAFT_KEY_TOGGLE_MINECRAFT_STYLE_FLYING) {
+	  g->minecraft_style_flying = !g->minecraft_style_flying;
+	}
+
 	//zw //unused for now but will be convenient to add it later
 	//if (key == CRAFT_KEY_CONNECT_TO_DEFAULT_SERVER) {
 	  
@@ -2465,7 +2475,8 @@ void handle_movement(double dt) {
         if (glfwGetKey(g->window, GLFW_KEY_DOWN)) s->ry -= m;
     }
     float vx, vy, vz;
-    get_motion_vector(g->flying, sz, sx, s->rx, s->ry, &vx, &vy, &vz);
+    get_motion_vector(g->flying, g->minecraft_style_flying,
+		      sz, sx, s->rx, s->ry, &vx, &vy, &vz);
     if (!g->typing) {
         if (glfwGetKey(g->window, CRAFT_KEY_JUMP)) {
             if (g->flying) {
@@ -2495,11 +2506,11 @@ void handle_movement(double dt) {
     vz = vz * ut * speed;
     for (int i = 0; i < step; i++) {
         if (g->flying) {
-            dy = 0;
+	  dy = 0; //zw: does this mean turn off gravity?
         }
         else {
             dy -= ut * 25;
-            dy = MAX(dy, -250);
+            dy = MAX(dy, -250); //zw: terminal velocity?
         }
         s->x += vx;
         s->y += vy + dy * ut;
@@ -2618,7 +2629,8 @@ void reset_model() {
     g->observe1 = 0;
     g->observe2 = 0;
     g->flying = 0;
-    g->scrolling_enabled = 1;
+    g->scrolling_enabled = 1; //zw //1 means true
+    g->minecraft_style_flying = 1; //zw //1 means true
     g->item_index = 0;
     memset(g->typing_buffer, 0, sizeof(char) * MAX_TEXT_LENGTH);
     g->typing = 0;

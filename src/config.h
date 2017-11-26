@@ -41,6 +41,8 @@
 #define CRAFT_KEY_CONNECT_TO_DEFAULT_SERVER GLFW_KEY_I //zw //I for Internet
 //Unused for now in src/main.c but ZW wants to use it later for convenience
 
+#define CRAFT_KEY_TOGGLE_MINECRAFT_STYLE_FLYING 'M' //ZW
+
 #define CRAFT_KEY_OBSERVE 'O'
 #define CRAFT_KEY_OBSERVE_INSET 'P'
 #define CRAFT_KEY_ITEM_NEXT 'E'
