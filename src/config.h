@@ -32,7 +32,7 @@
 #define CRAFT_KEY_LEFT 'A'
 #define CRAFT_KEY_RIGHT 'D'
 #define CRAFT_KEY_JUMP GLFW_KEY_SPACE
-#define CRAFT_KEY_DESCEND GLFW_KEY_X //zw
+#define CRAFT_KEY_DESCEND  GLFW_KEY_LEFT_SHIFT //zw //control stolen from zoom
 #define CRAFT_KEY_FLY GLFW_KEY_TAB
 #define CRAFT_KEY_TOGGLE_SCROLLING GLFW_KEY_C //zw
 #define CRAFT_KEY_PLACE_ROW GLFW_KEY_H //zw
@@ -47,7 +47,7 @@
 #define CRAFT_KEY_OBSERVE_INSET 'P'
 #define CRAFT_KEY_ITEM_NEXT 'E'
 #define CRAFT_KEY_ITEM_PREV 'R'
-#define CRAFT_KEY_ZOOM GLFW_KEY_LEFT_SHIFT
+#define CRAFT_KEY_ZOOM 'Z' //changed by ZW //zw
 #define CRAFT_KEY_ORTHO 'F'
 #define CRAFT_KEY_CHAT 't'
 #define CRAFT_KEY_COMMAND '/'
