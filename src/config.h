@@ -35,6 +35,12 @@
 #define CRAFT_KEY_DESCEND GLFW_KEY_X //zw
 #define CRAFT_KEY_FLY GLFW_KEY_TAB
 #define CRAFT_KEY_TOGGLE_SCROLLING GLFW_KEY_C //zw
+#define CRAFT_KEY_PLACE_ROW GLFW_KEY_H //zw
+//place a whole Horizontal row of blocks along X axis
+
+#define CRAFT_KEY_CONNECT_TO_DEFAULT_SERVER GLFW_KEY_I //zw //I for Internet
+//Unused for now in src/main.c but ZW wants to use it later for convenience
+
 #define CRAFT_KEY_OBSERVE 'O'
 #define CRAFT_KEY_OBSERVE_INSET 'P'
 #define CRAFT_KEY_ITEM_NEXT 'E'

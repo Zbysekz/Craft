@@ -2251,9 +2251,35 @@ void on_key(GLFWwindow *window, int key, int scancode, int action, int mods) {
         if (key == CRAFT_KEY_FLY) {
             g->flying = !g->flying;
         }
+
+	//zw
 	if (key == CRAFT_KEY_TOGGLE_SCROLLING) {
             g->scrolling_enabled = !g->scrolling_enabled;
         }
+
+	//zw //unused for now but will be convenient to add it later
+	//if (key == CRAFT_KEY_CONNECT_TO_DEFAULT_SERVER) {
+	  
+	
+	//zw
+	State *s = &g->players->state;
+	int hx, hy, hz;
+	int hw = hit_test(1, s->x, s->y, s->z, s->rx, s->ry, &hx, &hy, &hz);
+	if (hy > 0 && hy < 256 && is_obstacle(hw))
+	{
+	  if (!player_intersects_block(2, s->x, s->y, s->z, hx, hy, hz))
+	  {
+	    if (key == CRAFT_KEY_PLACE_ROW)
+	    { //row of blocks
+	      for (int i = 0; i < 18*2; i++)
+	      {
+		set_block(hx + i, hy, hz, items[g->item_index]);
+		record_block(hx + i, hy, hz, items[g->item_index]);
+	      }
+	    }
+	  }
+	}
+	
         if (key >= '1' && key <= '9') {
             g->item_index = key - '1';
         }
