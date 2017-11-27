@@ -18,11 +18,11 @@ http://www.michaelfogleman.com/craft/
 
 ### Download
 
-Mac and Windows binaries are available on the website.
+Michael Fogleman's Mac and Windows binaries are available on the website (but Zoe's fork is not).
 
 http://www.michaelfogleman.com/craft/
 
-See below to run from source.
+Alternatively, see below to run from source using the Terminal application.
 
 ### Install Dependencies
 
@@ -59,6 +59,7 @@ terminal.
 
     git clone https://github.com/fogleman/Craft.git
     cd Craft
+    javac JavaAudioPlaySoundExample.java
     cmake .
     make
     ./craft

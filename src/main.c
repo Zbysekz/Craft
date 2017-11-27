@@ -2143,6 +2143,7 @@ void on_light() {
     }
 }
 
+//ZW: break block //shovel item
 void on_left_click() {
     State *s = &g->players->state;
     int hx, hy, hz;
@@ -2151,11 +2152,24 @@ void on_left_click() {
         set_block(hx, hy, hz, 0);
         record_block(hx, hy, hz, 0);
         if (is_plant(get_block(hx, hy + 1, hz))) {
-            set_block(hx, hy + 1, hz, 0);
-        }
+	  set_block(hx, hy + 1, hz, 0); //Destroy the plant above it, too
+	}
+
+	//ZW
+	system("java JavaAudioPlaySoundExample \"sound_effects/dig.aiff\" &");
+	// \" to send a " to command line
+	//& to run in background
+	//https://stackoverflow.com/questions/15558956/multi-threading-in-command-line-possible
+	//Audio files need to be .aiff (.au AU format which is uncompressed) or
+	// otherwise I will get an error like this:
+	// https://stackoverflow.com/questions/16617715/cannot-create-audio-stream-from-input-stream#16618323
+	//Maybe other audio formats would work
+	// but not .mp3 nor .ogg easily
     }
+    
 }
 
+//ZW: place item
 void on_right_click() {
     State *s = &g->players->state;
     int hx, hy, hz;
@@ -2164,7 +2178,18 @@ void on_right_click() {
         if (!player_intersects_block(2, s->x, s->y, s->z, hx, hy, hz)) {
             set_block(hx, hy, hz, items[g->item_index]);
             record_block(hx, hy, hz, items[g->item_index]);
-        }
+	    
+	    //ZW
+	    system("java JavaAudioPlaySoundExample \"sound_effects/place_block.aiff\" &");
+	    // \" to send a " to command line
+	    //& to run in background
+	    //https://stackoverflow.com/questions/15558956/multi-threading-in-command-line-possible
+	    //Audio files need to be .aiff (.au AU format which is uncompressed) or
+	    // otherwise I will get an error like this:
+	    // https://stackoverflow.com/questions/16617715/cannot-create-audio-stream-from-input-stream#16618323
+	    //Maybe other audio formats would work
+	    // but not .mp3 nor .ogg easily
+	}
     }
 }
 
