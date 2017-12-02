@@ -49,7 +49,9 @@
 #define CRAFT_KEY_ITEM_PREV 'R'
 #define CRAFT_KEY_ZOOM 'Z' //changed by ZW //zw
 #define CRAFT_KEY_ORTHO 'F'
-#define CRAFT_KEY_CHAT 't'
+#define CRAFT_KEY_CHAT 't' //ZW: for Talk?
+//ZW: it only works when lowercase, IDK why.
+
 #define CRAFT_KEY_COMMAND '/'
 #define CRAFT_KEY_SIGN '`'
 

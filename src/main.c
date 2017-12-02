@@ -137,7 +137,8 @@ typedef struct {
     int flying;
   int scrolling_enabled; //zw //boolean
   int minecraft_style_flying; //zw //boolean
-    int item_index;
+  int survival; //zw
+  int item_index;
     int scale;
     int ortho;
     float fov;
@@ -2024,6 +2025,19 @@ void tree(Block *block) {
     }
 }
 
+//ZW
+//is_x_relative is Boolean (0 is false A.K.A. no, 1 is true A.K.A. yes)
+void teleport(int is_x_relative, float input_x,
+	      int is_y_relative, float input_y,
+	      int is_z_relative, float input_z
+	      ) {
+  State *s = &g->players->state;
+  s->x = (is_x_relative * (s->x)) + input_x;
+  s->y = (is_y_relative * (s->y)) + input_y;
+  s->z = (is_z_relative * (s->z)) + input_z;
+  add_message("Teleported \n");
+}
+
 void parse_command(const char *buffer, int forward) {
     char username[128] = {0};
     char token[128] = {0};
@@ -2031,11 +2045,83 @@ void parse_command(const char *buffer, int forward) {
     int server_port = DEFAULT_PORT;
     char filename[MAX_PATH_LENGTH];
     int radius, count, xc, yc, zc;
+    float input_x, input_y, input_z; //zw
+    //const char* is_relative_x, is_relative_y, is_relative_z; //zw
+    
     if (sscanf(buffer, "/identity %128s %128s", username, token) == 2) {
         db_auth_set(username, token);
         add_message("Successfully imported identity token!");
         login();
-    }
+    } else if (strcmp(buffer, "/survival") == 0) { //ZW
+      //if the command is "survival"
+      add_message("You set the gamemode to survival.");
+      g->survival = 1;
+    } else if (strcmp(buffer, "/creative") == 0) { //ZW
+      add_message("You set the gamemode to creative.");
+      g->survival = 0;
+    } else if (sscanf(buffer, "/teleport %f %f %f",
+		      &input_x,
+		      &input_y,
+		      &input_z
+		      ) == 3
+	       ) { //ZW
+      teleport(0, input_x, 0, input_y, 0, input_z);
+    } else if (sscanf(buffer, "/teleport %f %f ~%f", /*relative z*/ 
+		      &input_x,
+		      &input_y,
+		      &input_z
+		      ) == 3
+	       ) { //ZW
+      teleport(0, input_x, 0, input_y, 1, input_z);
+    } else if (sscanf(buffer, "/teleport %f ~%f %f",
+		      &input_x,
+		      &input_y,
+		      &input_z
+		      ) == 3
+	       ) { //ZW
+      teleport(0, input_x, 1, input_y, 0, input_z);
+    } else if (sscanf(buffer, "/teleport %f ~%f ~%f",
+		      &input_x,
+		      &input_y,
+		      &input_z
+		      ) == 3
+	       ) { //ZW
+      teleport(0, input_x, 1, input_y, 1, input_z);
+    } else if (sscanf(buffer, "/teleport ~%f %f %f",
+		      &input_x,
+		      &input_y,
+		      &input_z
+		      ) == 3
+	       ) { //ZW
+      teleport(1, input_x, 0, input_y, 0, input_z);
+    } else if (sscanf(buffer, "/teleport ~%f %f ~%f",
+		      &input_x,
+		      &input_y,
+		      &input_z
+		      ) == 3
+	       ) { //ZW
+      teleport(1, input_x, 0, input_y, 1, input_z);
+    } else if (sscanf(buffer, "/teleport ~%f ~%f %f",
+		      &input_x,
+		      &input_y,
+		      &input_z
+		      ) == 3
+	       ) { //ZW
+      teleport(1, input_x, 1, input_y, 0, input_z);
+    } else if (sscanf(buffer, "/teleport ~%f ~%f ~%f",
+		      &input_x,
+		      &input_y,
+		      &input_z
+		      ) == 3
+	       ) { //ZW
+      teleport(1, input_x, 1, input_y, 1, input_z);
+    } else if (strcmp(buffer, "/teleport") == 0) { //ZW
+      //Must come after the first if statements for teleport
+      //Still doesn't show up if the user types /teleport 4
+      // nor /teleport 4 ~ 2
+      
+      add_message("Usage example: /teleport ~-4.5 100 ~0 \n");
+    }	       
     else if (strcmp(buffer, "/logout") == 0) {
         db_auth_select_none();
         login();
@@ -2540,8 +2626,51 @@ void handle_movement(double dt) {
         s->x += vx;
         s->y += vy + dy * ut;
         s->z += vz;
-        if (collide(2, &s->x, &s->y, &s->z)) {
-            dy = 0;
+        if (collide(2, &s->x, &s->y, &s->z)) { //hits the ground //ZW
+	  if ((dy < -40) && g->survival) {
+	    add_message("You died. ");
+	    system("java JavaAudioPlaySoundExample \"sound_effects/dig.aiff\" &");
+
+	    //Memorial
+	    //Blocks in Craft are noted by the positions of their centers.
+	    //Therefore, a player can be standing at coordinate 4.5
+	    // on top of a block centered at coordinate 5.
+	    //Therefore, I round up or down (to the nearist integer)
+	    // to see which block the victim fell on.
+
+	    //https://fresh2refresh.com/c-programming/c-arithmetic-functions/c-round-function/
+	    //^ That source is wrong. 4148.5 will be rounded up to 4149.
+
+	    int rose_x = (int) round(s->x); 
+	    int rose_y = (int) round(s->y);
+	    int rose_z = (int) round(s->z);
+	    
+	    if (rose_y > 0 && rose_y < 256) {
+	      int block_at_memorial = get_block(rose_x, rose_y, rose_z);
+	      //The block at the victim's eye level when they hit the ground
+	      // so 1 block above the ground.
+	      
+	      if (!is_plant(block_at_memorial)
+		  && !is_obstacle(block_at_memorial)
+		  ) {
+		//If there is not already a plant where the victim is standing
+		//Even though there shouldn't be a block
+		// encasing the victim's feet or head,
+		// the victim could've teleported into a block while falling,
+		// so I make sure not to destroy that block either.
+		
+		set_block(rose_x, rose_y, rose_z, items[TALL_GRASS]);
+		record_block(rose_x, rose_y, rose_z, items[TALL_GRASS]);
+		//Offset to account for weird indexing
+		//For some reason, RED_FLOWER is the same as RED_FLOWER-2
+		// so I replaced RED_FLOWER with TALL_GRASS.
+	      } else {
+		add_message("Won't place memorial rose because there's already a block there.");
+	      }
+	    } 
+	    parse_command("/spawn", 1); //1 means forward to server, I think
+	  }
+	  dy = 0;
         }
     }
     if (s->y < 0) {
@@ -2656,6 +2785,7 @@ void reset_model() {
     g->flying = 0;
     g->scrolling_enabled = 1; //zw //1 means true
     g->minecraft_style_flying = 1; //zw //1 means true
+    g->survival = 0; //zw
     g->item_index = 0;
     memset(g->typing_buffer, 0, sizeof(char) * MAX_TEXT_LENGTH);
     g->typing = 0;
