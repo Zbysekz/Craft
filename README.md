@@ -98,11 +98,12 @@ the client.
 - Ctrl + Right Click to toggle a block as a light source.
 - 1-9 to select the block type to create.
 - E to cycle through the block types.
-- X to descend while flying
+- Shift to descend while flying.
 - Tab to toggle between walking and flying.
-- C to toggle mouse wheel scrolling (which is annoying with a trackpad)
-- ZXCVBN to move in exact directions along the XYZ axes.
-- Left shift to zoom.
+- M to toggle between Minecraft style flying and Fogleman's style flying.
+- C to toggle mouse wheel scrolling (which is annoying with a trackpad).
+- Z to zoom.
+- H to place a horizontal row of blocks.
 - F to show the scene in orthographic mode.
 - O to observe players in the main view.
 - P to observe players in the picture-in-picture view.
