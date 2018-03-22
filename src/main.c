@@ -22,7 +22,7 @@
 
 #define MAX_CHUNKS 8192
 #define MAX_PLAYERS 128
-#define MAX_BOTS 1
+#define MAX_BOTS 100
 
 #define WORKERS 4
 #define MAX_TEXT_LENGTH 256
@@ -103,6 +103,15 @@ typedef struct {
 } Player;
 
 typedef struct {
+    int id;
+    char name[MAX_NAME_LENGTH];
+    State state;
+    State state1;
+    State state2;
+    GLuint buffer;
+} Bot;
+
+typedef struct {
     GLuint program;
     GLuint position;
     GLuint normal;
@@ -127,7 +136,7 @@ typedef struct {
     int delete_radius;
     int sign_radius;
     Player players[MAX_PLAYERS];
-    Player bots[MAX_BOTS];
+    Bot bots[MAX_BOTS];
     int player_count;
     int bot_count;
     int typing;
@@ -295,7 +304,7 @@ GLuint gen_player_buffer(float x, float y, float z, float rx, float ry) {
 }
 GLuint gen_bot_buffer(float x, float y, float z, float rx, float ry) {
     GLfloat *data = malloc_faces(10, 6);
-    make_player(data, x, y, z, rx, ry);
+    make_bot(data, x, y, z, rx, ry);
     return gen_faces(10, 6, data);
 }
 GLuint gen_text_buffer(float x, float y, float n, char *text) {
@@ -422,6 +431,9 @@ void draw_plant(Attrib *attrib, GLuint buffer) {
 void draw_player(Attrib *attrib, Player *player) {
     draw_cube(attrib, player->buffer);
 }
+void draw_bot(Attrib *attrib, Bot *bot) {
+    draw_cube(attrib, bot->buffer);
+}
 
 Player *find_player(int id) {
     for (int i = 0; i < g->player_count; i++) {
@@ -456,12 +468,12 @@ void update_player(Player *player,
         player->buffer = gen_player_buffer(s->x, s->y, s->z, s->rx, s->ry);
     }
 }
-void update_bot(Player *player,
+void update_bot(Bot *bot,
     float x, float y, float z, float rx, float ry, int interpolate)
 {
     if (interpolate) {
-        State *s1 = &player->state1;
-        State *s2 = &player->state2;
+        State *s1 = &bot->state1;
+        State *s2 = &bot->state2;
         memcpy(s1, s2, sizeof(State));
         s2->x = x; s2->y = y; s2->z = z; s2->rx = rx; s2->ry = ry;
         s2->t = glfwGetTime();
@@ -473,10 +485,10 @@ void update_bot(Player *player,
         }
     }
     else {
-        State *s = &player->state;
+        State *s = &bot->state;
         s->x = x; s->y = y; s->z = z; s->rx = rx; s->ry = ry;
-        del_buffer(player->buffer);
-        player->buffer = gen_bot_buffer(s->x, s->y, s->z, s->rx, s->ry);
+        del_buffer(bot->buffer);
+        bot->buffer = gen_bot_buffer(s->x, s->y, s->z, s->rx, s->ry);
     }
 }
 void interpolate_player(Player *player) {
@@ -496,16 +508,16 @@ void interpolate_player(Player *player) {
         s1->ry + (s2->ry - s1->ry) * p,
         0);
 }
-void interpolate_bot(Player *player) {
-    State *s1 = &player->state1;
-    State *s2 = &player->state2;
+void interpolate_bot(Bot *bot) {
+    State *s1 = &bot->state1;
+    State *s2 = &bot->state2;
     float t1 = s2->t - s1->t;
     float t2 = glfwGetTime() - s2->t;
     t1 = MIN(t1, 1);
     t1 = MAX(t1, 0.1);
     float p = MIN(t2 / t1, 1);
     update_bot(
-        player,
+    		bot,
         s1->x + (s2->x - s1->x) * p,
         s1->y + (s2->y - s1->y) * p,
         s1->z + (s2->z - s1->z) * p,
@@ -1770,6 +1782,12 @@ void render_players(Attrib *attrib, Player *player) {
         }
     }
 }
+void render_bots(Attrib *attrib) {
+    for (int i = 0; i < g->bot_count; i++) {
+        Bot *other = g->bots + i;
+        draw_bot(attrib, other);
+    }
+}
 
 void render_sky(Attrib *attrib, Player *player, GLuint buffer) {
     State *s = &player->state;
@@ -2094,6 +2112,8 @@ void parse_command(const char *buffer, int forward) {
     float input_x, input_y, input_z; //zw
     //const char* is_relative_x, is_relative_y, is_relative_z; //zw
     
+    printf("cmd: %s\n",buffer);
+
     if (sscanf(buffer, "/identity %128s %128s", username, token) == 2) {
         db_auth_set(username, token);
         add_message("Successfully imported identity token!");
@@ -2288,7 +2308,7 @@ void on_left_click() {
 	}
 
 	//ZW
-	system("java JavaAudioPlaySoundExample \"sound_effects/dig.aiff\" &");
+	//system("java JavaAudioPlaySoundExample \"sound_effects/dig.aiff\" &");
 	// \" to send a " to command line
 	//& to run in background
 	//https://stackoverflow.com/questions/15558956/multi-threading-in-command-line-possible
@@ -2312,7 +2332,7 @@ void on_right_click() {
             record_block(hx, hy, hz, items[g->item_index]);
 	    
 	    //ZW
-	    system("java JavaAudioPlaySoundExample \"sound_effects/place_block.aiff\" &");
+	    //system("java JavaAudioPlaySoundExample \"sound_effects/place_block.aiff\" &");
 	    // \" to send a " to command line
 	    //& to run in background
 	    //https://stackoverflow.com/questions/15558956/multi-threading-in-command-line-possible
@@ -2663,7 +2683,7 @@ void handle_movement(double dt) {
     vz = vz * ut * speed;
     for (int i = 0; i < step; i++) {
         if (g->flying) {
-	  dy = 0; //zw: does this mean turn off gravity?
+        	dy = 0; //zw: does this mean turn off gravity?
         }
         else {
             dy -= ut * 25;
@@ -2673,9 +2693,9 @@ void handle_movement(double dt) {
         s->y += vy + dy * ut;
         s->z += vz;
         if (collide(2, &s->x, &s->y, &s->z)) { //hits the ground //ZW
-	  if ((dy < -40) && g->survival) {
-	    add_message("You died. ");
-	    system("java JavaAudioPlaySoundExample \"sound_effects/dig.aiff\" &");
+        	if ((dy < -40) && g->survival) {
+        		add_message("You died. ");
+
 
 	    //Memorial
 	    //Blocks in Craft are noted by the positions of their centers.
@@ -2723,7 +2743,74 @@ void handle_movement(double dt) {
         s->y = highest_block(s->x, s->z) + 2;
     }
 }
+void handle_bot_movement(Bot *bot, double dt) {
+    static float dy = 0;
+    State *s = &bot->state;
+    int sz = 0;
+    int sx = 0;
+    int flying = 0,flyingType=0;
 
+    float m = dt * 1.0;
+    sz--;
+    /*if (!g->typing) {
+
+        g->ortho = glfwGetKey(g->window, CRAFT_KEY_ORTHO) ? 64 : 0;
+        g->fov = glfwGetKey(g->window, CRAFT_KEY_ZOOM) ? 15 : 65;
+        if (glfwGetKey(g->window, CRAFT_KEY_FORWARD)) sz--;
+        if (glfwGetKey(g->window, CRAFT_KEY_BACKWARD)) sz++;
+        if (glfwGetKey(g->window, CRAFT_KEY_LEFT)) sx--;
+        if (glfwGetKey(g->window, CRAFT_KEY_RIGHT)) sx++;
+        if (glfwGetKey(g->window, GLFW_KEY_LEFT)) s->rx -= m;
+        if (glfwGetKey(g->window, GLFW_KEY_RIGHT)) s->rx += m;
+        if (glfwGetKey(g->window, GLFW_KEY_UP)) s->ry += m;
+        if (glfwGetKey(g->window, GLFW_KEY_DOWN)) s->ry -= m;
+    }*/
+    float vx, vy, vz;
+    get_motion_vector(flying, flyingType,
+		      sz, sx, s->rx, s->ry, &vx, &vy, &vz);
+
+    //JUMP
+       /*     if (flying) {
+                vy = 1;
+            }
+            else if (dy == 0) {
+                dy = 8;
+            }
+        }
+*/
+    float speed = flying ? 20 : 5;
+    int estimate = roundf(sqrtf(
+        powf(vx * speed, 2) +
+        powf(vy * speed + ABS(dy) * 2, 2) +
+        powf(vz * speed, 2)) * dt * 8);
+    int step = MAX(8, estimate);
+    float ut = dt / step;
+    vx = vx * ut * speed;
+    vy = vy * ut * speed;
+    vz = vz * ut * speed;
+
+    for (int i = 0; i < step; i++) {
+        if (flying) {
+        	dy = 0; //zw: does this mean turn off gravity?
+        }
+        else {
+            dy -= ut * 25;
+            dy = MAX(dy, -250); //zw: terminal velocity?
+        }
+        s->x += vx;
+        s->y += vy + dy * ut;
+        s->z += vz;
+        if (collide(2, &s->x, &s->y, &s->z)) { //hits the ground //ZW
+        	if ((dy < -40) && g->survival) {
+        		add_message("You died. ");
+        	}
+        	dy = 0;
+        }
+    }
+    if (s->y < 0) {
+        s->y = highest_block(s->x, s->z) + 2;
+    }
+}
 void parse_buffer(char *buffer) {
     Player *me = g->players;
     State *s = &g->players->state;
@@ -3022,6 +3109,7 @@ int main(int argc, char **argv) {
         me->name[0] = '\0';
         me->buffer = 0;
         g->player_count = 1;
+        g->flying = 1;
 
         // LOAD STATE FROM DATABASE //
         int loaded = db_load_state(&s->x, &s->y, &s->z, &s->rx, &s->ry);
@@ -3030,17 +3118,16 @@ int main(int argc, char **argv) {
             s->y = highest_block(s->x, s->z) + 2;
         }
 
-        //Create ONE BOT
+        //Create BOTS
+        g->bot_count = 5;
+        for(int i = 0; i < g->bot_count;i++){
+			g->bots[i].id = 100+i;
+			g->bots[i].buffer = 0;
 
-        g->bots[0]->id = 100;
-        g->bots[0]->buffer = 0;
-		snprintf(g->bots[0]->name, MAX_NAME_LENGTH, "bot%d", g->bots[0]->id);
+			snprintf(g->bots[i].name, MAX_NAME_LENGTH, "bot%d", g->bots[i].id);
 
-		State *sb = &g->bots[0]->state;
-
-		sb->y = highest_block(sb->x, sb->z) + 2;
-
-		update_player(g->bots[0], sb->x, sb->y, sb->z, sb->rx, sb->ry, 1);
+			update_bot(&g->bots[i], s->x + i + 1, s->y, s->z, s->rx, s->ry, 0);
+        }
 
 
         // BEGIN MAIN LOOP //
@@ -3070,6 +3157,10 @@ int main(int argc, char **argv) {
 
             // HANDLE MOVEMENT //
             handle_movement(dt);
+
+            // HANDLE BOT MOVEMENT //
+            for (int i = 0; i < g->bot_count; i++)
+            	handle_bot_movement(g->bots + i,dt);
 
             // HANDLE DATA FROM SERVER //
             char *buffer = client_recv();
@@ -3101,7 +3192,9 @@ int main(int argc, char **argv) {
             }
             //RENDERING BOTS
             for (int i = 0; i < g->bot_count; i++) {
-				interpolate_player(g->bots + i);
+            	State *s = &g->bots[i].state;
+            	update_bot(&g->bots[i], s->x, s->y, s->z, s->rx, s->ry, 0);
+				//interpolate_bot(g->bots + i);
 			}
 
             Player *player = g->players + g->observe1;
@@ -3115,6 +3208,8 @@ int main(int argc, char **argv) {
             render_signs(&text_attrib, player);
             render_sign(&text_attrib, player);
             render_players(&block_attrib, player);
+            render_bots(&block_attrib);
+
             if (SHOW_WIREFRAME) {
                 render_wireframe(&line_attrib, player);
             }
