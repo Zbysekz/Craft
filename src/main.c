@@ -22,6 +22,8 @@
 
 #define MAX_CHUNKS 8192
 #define MAX_PLAYERS 128
+#define MAX_BOTS 1
+
 #define WORKERS 4
 #define MAX_TEXT_LENGTH 256
 #define MAX_NAME_LENGTH 32
@@ -125,7 +127,9 @@ typedef struct {
     int delete_radius;
     int sign_radius;
     Player players[MAX_PLAYERS];
+    Player bots[MAX_BOTS];
     int player_count;
+    int bot_count;
     int typing;
     char typing_buffer[MAX_TEXT_LENGTH];
     int message_index;
@@ -289,7 +293,11 @@ GLuint gen_player_buffer(float x, float y, float z, float rx, float ry) {
     make_player(data, x, y, z, rx, ry);
     return gen_faces(10, 6, data);
 }
-
+GLuint gen_bot_buffer(float x, float y, float z, float rx, float ry) {
+    GLfloat *data = malloc_faces(10, 6);
+    make_player(data, x, y, z, rx, ry);
+    return gen_faces(10, 6, data);
+}
 GLuint gen_text_buffer(float x, float y, float n, char *text) {
     int length = strlen(text);
     GLfloat *data = malloc_faces(4, length);
@@ -448,7 +456,29 @@ void update_player(Player *player,
         player->buffer = gen_player_buffer(s->x, s->y, s->z, s->rx, s->ry);
     }
 }
-
+void update_bot(Player *player,
+    float x, float y, float z, float rx, float ry, int interpolate)
+{
+    if (interpolate) {
+        State *s1 = &player->state1;
+        State *s2 = &player->state2;
+        memcpy(s1, s2, sizeof(State));
+        s2->x = x; s2->y = y; s2->z = z; s2->rx = rx; s2->ry = ry;
+        s2->t = glfwGetTime();
+        if (s2->rx - s1->rx > PI) {
+            s1->rx += 2 * PI;
+        }
+        if (s1->rx - s2->rx > PI) {
+            s1->rx -= 2 * PI;
+        }
+    }
+    else {
+        State *s = &player->state;
+        s->x = x; s->y = y; s->z = z; s->rx = rx; s->ry = ry;
+        del_buffer(player->buffer);
+        player->buffer = gen_bot_buffer(s->x, s->y, s->z, s->rx, s->ry);
+    }
+}
 void interpolate_player(Player *player) {
     State *s1 = &player->state1;
     State *s2 = &player->state2;
@@ -466,7 +496,23 @@ void interpolate_player(Player *player) {
         s1->ry + (s2->ry - s1->ry) * p,
         0);
 }
-
+void interpolate_bot(Player *player) {
+    State *s1 = &player->state1;
+    State *s2 = &player->state2;
+    float t1 = s2->t - s1->t;
+    float t2 = glfwGetTime() - s2->t;
+    t1 = MIN(t1, 1);
+    t1 = MAX(t1, 0.1);
+    float p = MIN(t2 / t1, 1);
+    update_bot(
+        player,
+        s1->x + (s2->x - s1->x) * p,
+        s1->y + (s2->y - s1->y) * p,
+        s1->z + (s2->z - s1->z) * p,
+        s1->rx + (s2->rx - s1->rx) * p,
+        s1->ry + (s2->ry - s1->ry) * p,
+        0);
+}
 void delete_player(int id) {
     Player *player = find_player(id);
     if (!player) {
@@ -2715,7 +2761,7 @@ void parse_buffer(char *buffer) {
             &pid, &px, &py, &pz, &prx, &pry) == 6)
         {
             Player *player = find_player(pid);
-            if (!player && g->player_count < MAX_PLAYERS) {
+            if (!player && g->player_count < MAX_PLAYERS) {//new player data!
                 player = g->players + g->player_count;
                 g->player_count++;
                 player->id = pid;
@@ -2984,6 +3030,19 @@ int main(int argc, char **argv) {
             s->y = highest_block(s->x, s->z) + 2;
         }
 
+        //Create ONE BOT
+
+        g->bots[0]->id = 100;
+        g->bots[0]->buffer = 0;
+		snprintf(g->bots[0]->name, MAX_NAME_LENGTH, "bot%d", g->bots[0]->id);
+
+		State *sb = &g->bots[0]->state;
+
+		sb->y = highest_block(sb->x, sb->z) + 2;
+
+		update_player(g->bots[0], sb->x, sb->y, sb->z, sb->rx, sb->ry, 1);
+
+
         // BEGIN MAIN LOOP //
         double previous = glfwGetTime();
         while (1) {
@@ -3040,6 +3099,11 @@ int main(int argc, char **argv) {
             for (int i = 1; i < g->player_count; i++) {
                 interpolate_player(g->players + i);
             }
+            //RENDERING BOTS
+            for (int i = 0; i < g->bot_count; i++) {
+				interpolate_player(g->bots + i);
+			}
+
             Player *player = g->players + g->observe1;
 
             // RENDER 3-D SCENE //
