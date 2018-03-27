@@ -8,7 +8,14 @@
 #ifndef SRC_MAIN_H_
 #define SRC_MAIN_H_
 
-
+#include "map.h"
+#include "sign.h"
+#include <GL/glew.h>
+#include <GLFW/glfw3.h>
+#include "tinycthread.h"
+#include "config.h"
+#include "util.h"
+#include "cube.h"
 
 #define MAX_CHUNKS 8192
 #define MAX_PLAYERS 128

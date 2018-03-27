@@ -1,6 +1,10 @@
+#include "main.h"
 #include "config.h"
 #include "noise.h"
 #include "world.h"
+#include <math.h>
+#include <GL/glew.h>
+#include <GLFW/glfw3.h>
 
 void create_world(int p, int q, world_func func, void *arg) {
     int pad = 1;
@@ -74,4 +78,28 @@ void create_world(int p, int q, world_func func, void *arg) {
             }
         }
     }
+}
+
+float get_daylight() {
+    float timer = time_of_day();
+    if (timer < 0.5) {
+        float t = (timer - 0.25) * 100;
+        return 1 / (1 + powf(2, -t));
+    }
+    else {
+        float t = (timer - 0.85) * 100;
+        return 1 - 1 / (1 + powf(2, -t));
+    }
+}
+
+
+float time_of_day() {
+    if (g->day_length <= 0) {
+        return 0.5;
+    }
+    float t;
+    t = glfwGetTime();
+    t = t / g->day_length;
+    t = t - (int)t;
+    return t;
 }

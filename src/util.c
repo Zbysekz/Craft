@@ -223,3 +223,7 @@ int wrap(const char *input, int max_width, char *output, int max_length) {
     free(text);
     return line_number;
 }
+
+int chunked(float x) {
+    return floorf(roundf(x) / CHUNK_SIZE);
+}
